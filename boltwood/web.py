@@ -92,7 +92,7 @@ def main():
 
     # scheduler
     sched = BackgroundScheduler()
-    trigger = CronTrigger(minute='*')
+    trigger = CronTrigger(minute='*/5')
     sched.add_job(application.sched_callback, trigger)
     sched.start()
 
