@@ -50,15 +50,14 @@ class JsonHandler(tornado.web.RequestHandler):
 
 class Application(tornado.web.Application):
     def __init__(self, log_file: str = None, *args, **kwargs):
+        # static path
+        static_path = os.path.join(os.path.dirname(__file__), 'static_html/')
+
         # init tornado
         tornado.web.Application.__init__(self, [
             (r'/', MainHandler),
             (r'/(.*).json', JsonHandler),
-            (
-                r'/static/(.*)',
-                tornado.web.StaticFileHandler,
-                {'path': os.path.join(os.path.dirname(__file__), '/static_html/')}
-            )
+            (r'/static/(.*)', tornado.web.StaticFileHandler, {'path': static_path})
         ])
 
         # init other stuff
