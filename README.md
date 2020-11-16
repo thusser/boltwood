@@ -5,7 +5,8 @@ This package provides the serial connection and a web interface for the Boltwood
 ## Installation
 Clone repository:
 
-    https://github.com/thusser/boltwood.git
+    git clone https://github.com/thusser/boltwood.git
+    cd boltwood
     
 And install it:
 
