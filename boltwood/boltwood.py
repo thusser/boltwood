@@ -12,15 +12,15 @@ REPORT_SUFFIX = b'\n'
 
 class ResponsePrefix(Enum):
     ACK = b'\x02A'
-    THERMO_CALIB = b'\x02C'
+    THERMO_CALIB = b'\x02MC'
     REPORT = b'\x02MD'
-    WETNESS_CALIB = b'\x02K'
+    WETNESS_CALIB = b'\x02MK'
     NACK = b'\x02N'
     POLLING = b'\x02P'
     ECHO = b'\x02Q'
     ROOF = b'\x02R'
-    THRESHOLD = b'\x02T'
-    WETNESS = b'\x02W'
+    THRESHOLD = b'\x02MT'
+    WETNESS = b'\x02MW'
 
 
 HT_CODES = {
