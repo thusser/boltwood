@@ -47,6 +47,10 @@ class Application(tornado.web.Application):
         # sort history
         self.history = sorted(self.history, key=lambda h: h.time, reverse=True)
 
+        # crop to 10 entries
+        if len(self.history) > 10:
+            self.history = self.history[:10]
+
         # write to log file?
         if self.log_file is not None:
             # does it exist?
