@@ -1,4 +1,5 @@
 import logging
+import time
 from enum import Enum
 import serial
 import threading
@@ -462,6 +463,8 @@ class BoltwoodII:
         # init
         serial_errors = 0
         sleep_time = self._thread_sleep
+        last_report = None
+        raw_data = b''
 
         # loop until closing
         while not self._closing.is_set():
@@ -488,24 +491,66 @@ class BoltwoodII:
                     # do logging
                     logging.critical('%d failed connections to Boltwood II: %s, sleep %d',
                                      serial_errors, str(e), sleep_time)
+                    self._closing.wait(sleep_time)
 
             # actually read next line and process it
             if self._conn is not None:
                 # read data
-                raw_data = self._conn.readline()
+                raw_data += self._conn.read()
 
-                # sometimes the response starts with '/x00', cut that away
-                if raw_data.startswith(b'\x00'):
-                    raw_data = raw_data[1:]
+                # extract messages
+                msgs, raw_data = self._extract_messages(raw_data)
 
                 # analyse it
-                self._analyse_message(raw_data)
+                for msg in msgs:
+                    self._analyse_message(msg)
+                    last_report = time.time()
 
-            # sleep a little
-            self._closing.wait(sleep_time)
+                # no report in a long time?
+                if last_report is not None:
+                    # TODO: This doesn't seem to be a perfect solution, since we now always get a wait time
+                    #       after MT/MK/MW/MC packages
+                    if time.time() - last_report > 10:
+                        self._send_poll_request()
 
         # close connection
         self._conn.close()
+
+    def _extract_messages(self, raw_data) -> (list, bytearray):
+        """ Extract all complete messages from the raw data from the Boltwood.
+
+        Args:
+            raw_data: bytearray from Boltwood (via serial.readline())
+
+        Returns:
+            List of messages and remaining raw data.
+
+        Normally, there should just be a single message per readline, but....
+        """
+
+        # nothing?
+        if not raw_data:
+            return [], b''
+
+        # find complete messages
+        msgs = []
+        while REPORT_SUFFIX in raw_data:
+            # get message
+            pos = raw_data.index(b'\n')
+            msg = raw_data[:pos + 1]
+
+            # sometimes the response starts with '/x00', cut that away
+            if msg.startswith(b'\x00'):
+                msg = msg[1:]
+
+            # store it
+            msgs.append(msg)
+
+            # remove from raw_data
+            raw_data = raw_data[pos + 1:]
+
+        # return new raw_data and messages
+        return msgs, raw_data
 
     def _connect_serial(self):
         """Open/reset serial connection to sensor."""
@@ -553,8 +598,8 @@ class BoltwoodII:
 
         # what type is it?
         if response_type == ResponsePrefix.POLLING:
-            # resend polling request
-            self._send_poll_request()
+            # acknowledge it
+            self._send_ack()
 
         elif response_type == ResponsePrefix.REPORT:
             # create report
@@ -563,6 +608,12 @@ class BoltwoodII:
             # send it?
             if self._callback is not None:
                 self._callback(report)
+
+    def _send_ack(self):
+        """Send ACK."""
+
+        # send ACK + new poll request
+        self._conn.write(ResponsePrefix.ACK.value + b'\n' + REQUEST_POLL)
 
     def _send_poll_request(self):
         """Ask sensor for data."""
