@@ -1,4 +1,5 @@
 import argparse
+import json
 import os
 import tornado.ioloop
 import tornado.web
@@ -16,13 +17,45 @@ class MainHandler(tornado.web.RequestHandler):
                     current=self.application.current, history=self.application.history)
 
 
+class JsonHandler(tornado.web.RequestHandler):
+    def set_default_headers(self):
+        self.set_header('Content-Type', 'application/json')
+
+    def get(self, which):
+        """JSON output of data.
+
+        Args:
+            which: "current" or "average".
+
+        Returns:
+            JSON output.
+        """
+
+        # get record
+        if which == 'current':
+            record = self.application.current
+        elif which == 'average':
+            record = self.application.average
+        else:
+            raise tornado.web.HTTPError(404)
+
+        # get data
+        data = {'time': record.time.strftime('%Y-%m-%d %H:%M:%S')}
+        for c in ['T_ambient', 'humidity', 'windspeed', 'dT_sky', 'raining']:
+            data[c] = record.data[c] if c in record.data else 'N/A'
+
+        # send to client
+        self.write(json.dumps(data))
+
+
 class Application(tornado.web.Application):
     def __init__(self, log_file: str = None, *args, **kwargs):
         # init tornado
         tornado.web.Application.__init__(self, [
-            (r"/", MainHandler),
+            (r'/', MainHandler),
+            (r'/(.*).json', JsonHandler),
             (
-                r"/static/(.*)",
+                r'/static/(.*)',
                 tornado.web.StaticFileHandler,
                 {'path': os.path.join(os.path.dirname(__file__), '/static_html/')}
             )
@@ -33,6 +66,10 @@ class Application(tornado.web.Application):
         self.reports = []
         self.history = []
         self.log_file = log_file
+
+    @property
+    def average(self):
+        return self.history[0] if len(self.history) > 0 else Report()
 
     def bw2_callback(self, report):
         # store report
