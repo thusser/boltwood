@@ -593,7 +593,7 @@ class BoltwoodII:
         try:
             response_type = ResponsePrefix(tmp)
         except ValueError:
-            logging.critical('Could not determine response type %s.', tmp)
+            logging.warning('Could not determine response type %s.', tmp)
             return
 
         # what type is it?
