@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Boltwood II Weather</title>
+    <link rel="stylesheet" href="/static/bootstrap.min.css">
+    <style>
+        .container {
+            margin-top: 2em;
+        }
+        h3 {
+            margin-top: 1em;
+        }
+        th, td {
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h2>Boltwood II Weather</h2>
+    <h3>Current</h3>
+    <table class="table table-sm table-striped table-hover">
+        <thead>
+        <tr>
+            <th>Time [UT]</th>
+            <th>Ambient Temp[°C]</th>
+            <th>Humidity [%]</th>
+            <th>Wind speed [m/s]</th>
+            <th>Sky Temp Diff[°C]</th>
+            <th>Rain</th>
+        </tr>
+        </thead>
+        <tr>
+            <td>{{ current.format('time') }}</td>
+            <td>{{ current.format('T_ambient') }}</td>
+            <td>{{ current.format('humidity') }}</td>
+            <td>{{ current.format('windspeed') }}</td>
+            <td>{{ current.format('dT_sky') }}</td>
+            <td>{{ current.format('raining') }}</td>
+        </tr>
+    </table>
+
+    <h3>History</h3>
+    <table class="table table-sm table-striped table-hover">
+        <thead>
+        <tr>
+            <th>Time [UT]</th>
+            <th>Ambient Temp[°C]</th>
+            <th>Humidity [%]</th>
+            <th>Wind speed [m/s]</th>
+            <th>Sky Temp Diff[°C]</th>
+            <th>Rain</th>
+        </tr>
+        </thead>
+        {% for h in history %}
+        <tr>
+            <td>{{ h.format('time') }}</td>
+            <td>{{ h.format('T_ambient') }}</td>
+            <td>{{ h.format('humidity') }}</td>
+            <td>{{ h.format('windspeed') }}</td>
+            <td>{{ h.format('dT_sky') }}</td>
+            <td>{{ h.format('raining') }}</td>
+        </tr>
+        {% end %}
+    </table>
+</div>
+</body>
+</html>
