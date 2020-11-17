@@ -237,6 +237,7 @@ class SensorsReport(Report):
     def sky_status(self):
         return api.SKY_CODES[self.data['skyCond']] if 'skyCond' in self.data else 'N/A'
 
+
 class AverageSensorsReport(Report):
     """A sensor data report."""
 
