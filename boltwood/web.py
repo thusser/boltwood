@@ -100,7 +100,7 @@ class Application(tornado.web.Application):
         """Load history from log file"""
 
         # no logfile?
-        if self.log_file is None:
+        if self.log_file is None or not os.path.exists(self.log_file):
             return
 
         # open file
