@@ -1,4 +1,5 @@
 import argparse
+import datetime
 import json
 import os
 import tornado.ioloop
@@ -6,6 +7,7 @@ import tornado.web
 import tornado.httpserver
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
+import logging
 
 from boltwood.report import AverageSensorsReport, SensorsReport, ThresholdReport, WetnessReport, WetnessCalibReport, \
     ThermopileCalibReport
@@ -73,6 +75,9 @@ class Application(tornado.web.Application):
         self.wetness_calib = None
         self.thermo_calib = None
 
+        # load history
+        self._load_history()
+
     @property
     def average(self):
         return self.history[0] if len(self.history) > 0 else Report()
@@ -91,17 +96,55 @@ class Application(tornado.web.Application):
         elif isinstance(report, ThermopileCalibReport):
             self.thermo_calib = report
 
-    def sched_callback(self):
-        # average reports
-        average = AverageSensorsReport(self.reports)
-        self.history.append(average)
+    def _load_history(self):
+        """Load history from log file"""
 
+        # no logfile?
+        if self.log_file is None:
+            return
+
+        # open file
+        with open(self.log_file, 'r') as csv:
+            # check header
+            if csv.readline() != 'time,T_ambient,humidity,windspeed,dT_sky,raining\n':
+                logging.error('Invalid log file format.')
+                return
+
+            # read lines
+            for line in csv:
+                # split and check
+                s = line.split(',')
+                if len(s) != 6:
+                    logging.error('Invalid log file format.')
+                    continue
+
+                # create report and fill it
+                report = AverageSensorsReport([])
+                report.time = datetime.datetime.strptime(s[0], '%Y-%m-%d %H:%M:%S')
+                report.data = {
+                    'ambientTemperature': float(s[1]),
+                    'relativeHumidityPercentage': float(s[2]),
+                    'windSpeed': float(s[3]),
+                    'skyMinusAmbientTemperature': float(s[4]),
+                    'rainSensor': bool(s[5]),
+                }
+                self.history.append(report)
+
+        # crop
+        self._crop_history()
+
+    def _crop_history(self):
         # sort history
         self.history = sorted(self.history, key=lambda h: h.time, reverse=True)
 
         # crop to 10 entries
         if len(self.history) > 10:
             self.history = self.history[:10]
+
+    def sched_callback(self):
+        # average reports
+        average = AverageSensorsReport(self.reports)
+        self.history.append(average)
 
         # write to log file?
         if self.log_file is not None:

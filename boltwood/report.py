@@ -255,18 +255,20 @@ class AverageSensorsReport(Report):
         # init report
         Report.__init__(self, columns=columns, *args, **kwargs)
 
-        # average
-        data = {k: [] for k, _ in columns}
-        for r in reports:
-            for c, _ in columns:
-                try:
-                    data[c].append(r.data[c])
-                except KeyError:
-                    pass
+        # got anything?
+        if reports:
+            # average
+            data = {k: [] for k, _ in columns}
+            for r in reports:
+                for c, _ in columns:
+                    try:
+                        data[c].append(r.data[c])
+                    except KeyError:
+                        pass
 
-        # calculate mean
-        for c in ['skyMinusAmbientTemperature', 'ambientTemperature', 'windSpeed', 'relativeHumidityPercentage']:
-            self.data[c] = np.mean(data[c])
+            # calculate mean
+            for c in ['skyMinusAmbientTemperature', 'ambientTemperature', 'windSpeed', 'relativeHumidityPercentage']:
+                self.data[c] = np.mean(data[c])
 
-        # rain
-        self.data['rainSensor'] = any(data['rainSensor'])
+            # rain
+            self.data['rainSensor'] = any(data['rainSensor'])
