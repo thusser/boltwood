@@ -13,7 +13,7 @@ setup(
             'bw2web=boltwood.web:main'
         ]
     },
-    package_data={'boltwood': ['*.html', '*.css']},
+    package_data={'boltwood': ['*.html', 'static_html/*.css']},
     include_package_data=True,
     install_requires=['tornado', 'apscheduler', 'pyserial', 'numpy']
 )
