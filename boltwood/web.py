@@ -145,6 +145,7 @@ class Application(tornado.web.Application):
         # average reports
         average = AverageSensorsReport(self.reports)
         self.history.append(average)
+        self._crop_history()
 
         # write to log file?
         if self.log_file is not None:
