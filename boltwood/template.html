@@ -31,12 +31,12 @@
         </tr>
         </thead>
         <tr>
-            <td>{{ current.format('time') }}</td>
-            <td>{{ current.format('T_ambient') }}</td>
-            <td>{{ current.format('humidity') }}</td>
-            <td>{{ current.format('windspeed') }}</td>
-            <td>{{ current.format('dT_sky') }}</td>
-            <td>{{ current.format('raining') }}</td>
+            <td>{{ current.format_string('time') }}</td>
+            <td>{{ current.format_string('ambientTemperature') }}</td>
+            <td>{{ current.format_string('relativeHumidityPercentage') }}</td>
+            <td>{{ current.format_string('windSpeed') }}</td>
+            <td>{{ current.format_string('skyMinusAmbientTemperature') }}</td>
+            <td>{{ current.format_string('rainSensor') }}</td>
         </tr>
     </table>
 
@@ -54,12 +54,12 @@
         </thead>
         {% for h in history %}
         <tr>
-            <td>{{ h.format('time') }}</td>
-            <td>{{ h.format('T_ambient') }}</td>
-            <td>{{ h.format('humidity') }}</td>
-            <td>{{ h.format('windspeed') }}</td>
-            <td>{{ h.format('dT_sky') }}</td>
-            <td>{{ h.format('raining') }}</td>
+            <td>{{ h.format_string('time') }}</td>
+            <td>{{ h.format_string('ambientTemperature') }}</td>
+            <td>{{ h.format_string('relativeHumidityPercentage') }}</td>
+            <td>{{ h.format_string('windSpeed') }}</td>
+            <td>{{ h.format_string('skyMinusAmbientTemperature') }}</td>
+            <td>{{ h.format_string('rainSensor') }}</td>
         </tr>
         {% end %}
     </table>

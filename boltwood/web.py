@@ -7,6 +7,8 @@ import tornado.httpserver
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 
+from boltwood.report import AverageSensorsReport, SensorsReport, ThresholdReport, WetnessReport, WetnessCalibReport, \
+    ThermopileCalibReport
 from .boltwood import BoltwoodII, Report
 
 
@@ -65,6 +67,10 @@ class Application(tornado.web.Application):
         self.reports = []
         self.history = []
         self.log_file = log_file
+        self.thresholds = None
+        self.wetness = None
+        self.wetness_calib = None
+        self.thermo_calib = None
 
     @property
     def average(self):
@@ -72,12 +78,21 @@ class Application(tornado.web.Application):
 
     def bw2_callback(self, report):
         # store report
-        self.current = report
-        self.reports.append(report)
+        if isinstance(report, SensorsReport):
+            self.current = report
+            self.reports.append(report)
+        elif isinstance(report, ThresholdReport):
+            self.thresholds = ThresholdReport
+        elif isinstance(report, WetnessReport):
+            self.wetness = report
+        elif isinstance(report, WetnessCalibReport):
+            self.wetness_calib = report
+        elif isinstance(report, ThermopileCalibReport):
+            self.thermo_calib = report
 
     def sched_callback(self):
         # average reports
-        average = Report.average(self.reports)
+        average = AverageSensorsReport(self.reports)
         self.history.append(average)
 
         # sort history
@@ -97,7 +112,12 @@ class Application(tornado.web.Application):
 
             # write line
             with open(self.log_file, 'a') as csv:
-                fmt = '{time},{T_ambient:.2f},{humidity:.2f},{windspeed:.2f},{dT_sky:.2f},{raining}\n'
+                fmt = '{time},' \
+                      '{ambientTemperature:.2f},' \
+                      '{relativeHumidityPercentage:.2f},' \
+                      '{windSpeed:.2f},' \
+                      '{skyMinusAmbientTemperature:.2f},' \
+                      '{rainSensor}\n'
                 csv.write(fmt.format(time=average.time.strftime('%Y-%m-%d %H:%M:%S'), **average.data))
 
         # reset reports

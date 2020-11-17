@@ -4,7 +4,7 @@ import serial
 import threading
 
 from . import api
-from .report import Report
+from .report import Report, SensorsReport
 
 
 class BoltwoodII:
@@ -152,7 +152,7 @@ class BoltwoodII:
 
         # find complete messages
         msgs = []
-        while api.REPORT_SUFFIX in raw_data:
+        while api.FRAME_END in raw_data:
             # get message
             pos = raw_data.index(b'\n')
             msg = raw_data[:pos + 1]
@@ -206,22 +206,40 @@ class BoltwoodII:
             self._send_poll_request()
             return
 
-        # get response type
-        tmp = raw_data.split()[0]
+        # get frame
+        # need to compare ranges, because an index into a bytesarray gives an integer, not a byte!
+        if raw_data[:1] != api.FRAME_START or raw_data[-1:] != api.FRAME_END:
+            logging.warning('Invalid frame found.')
+            return
+        frame = raw_data[1:-1]
+
+        # get command
         try:
-            response_type = api.ResponsePrefix(tmp)
+            command = api.CommandChar(frame[:1])
         except ValueError:
-            logging.warning('Could not determine response type %s.', tmp)
+            logging.error('Invalid command character found: %s', frame[:1])
             return
 
-        # what type is it?
-        if response_type == api.ResponsePrefix.POLLING:
+        # what do we do with this?
+        if command == api.CommandChar.POLL:
             # acknowledge it
             self._send_ack()
 
-        elif response_type == api.ResponsePrefix.REPORT:
-            # create report
-            report = Report(raw_data)
+        elif command == api.CommandChar.ACK:
+            # do nothing
+            pass
+
+        elif command == api.CommandChar.NACK:
+            # do nothing
+            pass
+
+        elif command == api.CommandChar.MSG:
+            # parse report
+            try:
+                report = Report.parse_report(raw_data)
+            except ValueError as e:
+                logging.error(str(e))
+                return
 
             # send it?
             if self._callback is not None:
@@ -231,7 +249,7 @@ class BoltwoodII:
         """Send ACK."""
 
         # send ACK + new poll request
-        self._conn.write(api.ResponsePrefix.ACK.value + b'\n' + api.REQUEST_POLL)
+        self._conn.write(api.FRAME_START + api.CommandChar.ACK.value + api.FRAME_END + api.REQUEST_POLL)
 
     def _send_poll_request(self):
         """Ask sensor for data."""

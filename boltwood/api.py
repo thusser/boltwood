@@ -2,20 +2,23 @@ from enum import Enum
 
 
 REQUEST_POLL = b'\x01'
-REPORT_SUFFIX = b'\n'
+FRAME_START = b'\x02'
+FRAME_END = b'\n'
 
 
-class ResponsePrefix(Enum):
-    ACK = b'\x02A'
-    THERMO_CALIB = b'\x02MC'
-    REPORT = b'\x02MD'
-    WETNESS_CALIB = b'\x02MK'
-    NACK = b'\x02N'
-    POLLING = b'\x02P'
-    ECHO = b'\x02Q'
-    ROOF = b'\x02R'
-    THRESHOLD = b'\x02MT'
-    WETNESS = b'\x02MW'
+class CommandChar(Enum):
+    POLL = b'P'
+    ACK = b'A'
+    NACK = b'N'
+    MSG = b'M'
+
+
+class ReportType(Enum):
+    THERMO_CALIB = b'C'
+    SENSORS = b'D'
+    WETNESS_CALIB = b'K'
+    THRESHOLD = b'T'
+    WETNESS = b'W'
 
 
 HT_CODES = {
