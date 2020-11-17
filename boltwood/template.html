@@ -19,7 +19,7 @@
 <div class="container">
     <h2>Boltwood II Weather</h2>
     <h3>Current</h3>
-    <table class="table table-sm table-striped table-hover">
+    <table class="table table-sm">
         <thead>
         <tr>
             <th>Time [UT]</th>
@@ -30,6 +30,7 @@
             <th>Rain</th>
         </tr>
         </thead>
+        {% if current is not None %}
         <tr>
             <td>{{ current.format_string('time') }}</td>
             <td>{{ current.format_string('ambientTemperature') }}</td>
@@ -38,6 +39,7 @@
             <td>{{ current.format_string('skyMinusAmbientTemperature') }}</td>
             <td>{{ current.format_string('rainSensor') }}</td>
         </tr>
+        {% end %}
     </table>
 
     <h3>History</h3>

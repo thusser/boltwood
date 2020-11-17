@@ -14,9 +14,9 @@ from .boltwood import BoltwoodII, Report
 
 class MainHandler(tornado.web.RequestHandler):
     def get(self):
-        self.application: Application
+        app: Application = self.application
         self.render(os.path.join(os.path.dirname(__file__), 'template.html'),
-                    current=self.application.current, history=self.application.history)
+                    current=app.current, history=app.history)
 
 
 class JsonHandler(tornado.web.RequestHandler):
@@ -63,7 +63,7 @@ class Application(tornado.web.Application):
         ])
 
         # init other stuff
-        self.current = Report()
+        self.current = None
         self.reports = []
         self.history = []
         self.log_file = log_file
