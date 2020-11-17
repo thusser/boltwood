@@ -6,136 +6,7 @@ import threading
 import numpy as np
 from datetime import datetime
 
-
-REQUEST_POLL = b'\x01'
-REPORT_SUFFIX = b'\n'
-
-
-class ResponsePrefix(Enum):
-    ACK = b'\x02A'
-    THERMO_CALIB = b'\x02MC'
-    REPORT = b'\x02MD'
-    WETNESS_CALIB = b'\x02MK'
-    NACK = b'\x02N'
-    POLLING = b'\x02P'
-    ECHO = b'\x02Q'
-    ROOF = b'\x02R'
-    THRESHOLD = b'\x02MT'
-    WETNESS = b'\x02MW'
-
-
-HT_CODES = {
-    0: 'OK',
-    1: 'humidity write failure',
-    2: 'humidty measurement unfinished',
-    3: 'temperature write failure',
-    4: 'temperature measurement unfinished',
-    5: 'humidity data line not high',
-    6: 'temperature data line not high'
-}
-
-CLOUD_CODES = {
-    0: 'unknown',
-    1: 'clear',
-    2: 'cloudy',
-    3: 'very cloudy'
-}
-
-WIND_CODES = {
-    0: 'unknown',
-    1: 'OK',
-    2: 'windy',
-    3: 'very windy'
-}
-
-RAIN_CODES = {
-    0: 'unknown',
-    1: 'not raining',
-    2: 'recently raining',
-    3: 'raining'
-}
-
-SKY_CODES = {
-    0: 'unknown',
-    1: 'clear',
-    2: 'cloudy',
-    3: 'very cloudy',
-    4: 'wet'
-}
-
-ROOF_CODES = {
-    0: 'OK',
-    1: 'close'
-}
-
-# Floats! Have to be used as limits: try sequentially:
-# TSky >  999 means saturated hot
-#      < -998 means saturated cold
-#      < -999 means wet sensor
-TSKY_CODES = {
-    '999.9': 'saturated hot',
-    '-999.9': 'saturated cold',
-    '-998.9': 'wet sensor'
-}
-
-# Floats! Due to rounding errors, should be used as limits: try sequentially
-# dTanemom_code < -0.5 means heating up
-#               < -1.5 means wet
-#               < -2.5 means bad A/D
-#               < -3.5 means probe not heating
-ANEMOMETER_CODES = {
-    '-1.': 'heating up',
-    '-2.': 'wet',
-    '-3.': 'bad A/D',
-    '-4.': 'probe not heating'
-}
-
-WETNESS_CODES = {
-    'N': 'dry',
-    'W': 'wet',
-    'w': 'recently wet'
-}
-
-OTHER_RAIN_CODES = {
-    'N': 'none',
-    'R': 'rain',
-    'r': 'recent rain'
-}
-
-# Floats! Due to rounding errors, should be used as limits: try sequentially
-# code >  999 means saturated hot
-#      < -999 means saturated cold
-THERMOPILE_CODES = {
-    '999.9': 'saturated hot',
-    '-999.9': 'saturated cold'
-}
-
-# Floats! Due to rounding errors, should be used as limits: try sequentially
-# code >  999 means saturated hot
-#      < -999 means saturated cold
-TCALIB_CODES = {
-    '999.9': 'saturated hot',
-    '-99.9': 'saturated cold'
-}
-
-# error if != '1'???? This appears to be wrong: should be != 0???? Switch codes 0 and 1 !!!!
-HEATER_CODES = {
-    1: 'too hot',
-    0: 'OK',
-    2: 'too cold',
-    3: 'too cold',
-    4: 'too cold',
-    5: 'too cold',
-    6: 'saturated case temperature',
-    7: 'normal control'
-}
-
-DAYLIGHT_CODES = {
-    0: 'unknown',
-    1: 'night',
-    2: 'twilight',
-    3: 'daylight'
-}
+from . import api
 
 
 class Report:
@@ -210,7 +81,7 @@ class Report:
 
         # decode bytes from Boltwood into a string
         try:
-            line = self.raw_data[len(ResponsePrefix.REPORT.value):-1].decode('utf-8')
+            line = self.raw_data[len(api.ResponsePrefix.REPORT.value):-1].decode('utf-8')
         except UnicodeDecodeError as e:
             comment = 'unicode decode error : {0}'.format(str(e))
             logging.warning(comment)
@@ -231,75 +102,75 @@ class Report:
             # HUMIDITY-TEMPERATURE SENSORS
             self.data['T_ambient'] = float(s[7])
             self.data['humidity'] = float(s[11])
-            status = HT_CODES[int(s[0])]
+            status = api.HT_CODES[int(s[0])]
             if status != 'OK':
                 self.errors['hT status'] = status
                 logging.warning('Boltwood II humidity error:' + status)
             self.data['hT status'] = status
 
             # RAIN SENSOR
-            rain = RAIN_CODES[int(s[3])]
+            rain = api.RAIN_CODES[int(s[3])]
             if rain == 'raining':
                 raining = True
                 wet = True
             self.data['rain status'] = rain
-            self.data['rain code'] = OTHER_RAIN_CODES[s[10]]
+            self.data['rain code'] = api.OTHER_RAIN_CODES[s[10]]
 
             # SKY TEMPERATURE SENSOR
             dT_sky = float(s[6])
             ok = True
             w = False
             if dT_sky > 999.:
-                self.errors['dT_sky'] = TSKY_CODES['999.9']
+                self.errors['dT_sky'] = api.TSKY_CODES['999.9']
                 logging.warning('Boltwood II sky temperature saturated:' + status)
                 ok = False
             if dT_sky < -998.:
-                self.comments['dT_sky'] = TSKY_CODES['-998.9']  # WET SENSOR
+                self.comments['dT_sky'] = api.TSKY_CODES['-998.9']  # WET SENSOR
                 logging.warning('Boltwood II sensor is wet:' + status)
                 w = True
                 ok = False
             if dT_sky < -999.:
-                self.comments['dT_sky'] = TSKY_CODES['-999.9']
+                self.comments['dT_sky'] = api.TSKY_CODES['-999.9']
                 w = False
                 ok = False
             if ok:
                 self.data['dT_sky'] = dT_sky
             if w:
                 wet = True
-            self.data['cloud status'] = CLOUD_CODES[int(s[1])]
-            self.data['sky status'] = SKY_CODES[int(s[4])]
+            self.data['cloud status'] = api.CLOUD_CODES[int(s[1])]
+            self.data['sky status'] = api.SKY_CODES[int(s[4])]
 
             # WIND SENSOR
-            self.data['wind status'] = WIND_CODES[int(s[2])]
+            self.data['wind status'] = api.WIND_CODES[int(s[2])]
             self.data['windspeed'] = float(s[8])
 
             # WETNESS
-            status = WETNESS_CODES[s[9]]
+            status = api.WETNESS_CODES[s[9]]
             self.data['wet status'] = status
             if status == 'wet':
                 wet = True
 
             # MISC
-            self.data['roof status'] = ROOF_CODES[int(s[5])]
+            self.data['roof status'] = api.ROOF_CODES[int(s[5])]
             self.data['T_dewpoint'] = float(s[12])
             self.data['T_case'] = float(s[13])
 
             status = int(s[14])
-            if status < 0 or status > len(HEATER_CODES):
+            if status < 0 or status > len(api.HEATER_CODES):
                 serr = 'heater code status = {0} = {1}?'.format(s[14], status)
                 logging.error(serr)
                 self.errors['unknown code'] = serr
             else:
-                self.data['heater status'] = HEATER_CODES[status]
+                self.data['heater status'] = api.HEATER_CODES[status]
                 if not (status == 0 or status == 7):  # status==1? SEE boltwood_py
-                    self.errors['heater'] = HEATER_CODES[status]
+                    self.errors['heater'] = api.HEATER_CODES[status]
 
             Tcalib = float(s[15])
             self.data['T_calib'] = Tcalib
             if Tcalib > 999.:
-                self.comments['T_calib'] = TCALIB_CODES['999.9']
+                self.comments['T_calib'] = api.TCALIB_CODES['999.9']
             elif Tcalib < -99.:
-                self.comments['T_calib'] = TCALIB_CODES['-99.9']
+                self.comments['T_calib'] = api.TCALIB_CODES['-99.9']
 
             self.data['heater'] = int(s[16])
             self.data['sensor voltage'] = float(s[17])
@@ -307,19 +178,19 @@ class Report:
             dT = float(s[18])
             self.data['dT_anemom'] = dT
             if dT < -0.5:
-                self.errors['dT_anemom'] = ANEMOMETER_CODES['-1.']
+                self.errors['dT_anemom'] = api.ANEMOMETER_CODES['-1.']
             elif dT < -1.5:
-                self.errors['dT_anemom'] = ANEMOMETER_CODES['-2.']
+                self.errors['dT_anemom'] = api.ANEMOMETER_CODES['-2.']
             elif dT < -2.5:
-                self.errors['dT_anemom'] = ANEMOMETER_CODES['-3.']
+                self.errors['dT_anemom'] = api.ANEMOMETER_CODES['-3.']
             elif dT < -3.5:
-                self.errors['dT_anemom'] = ANEMOMETER_CODES['-4.']
+                self.errors['dT_anemom'] = api.ANEMOMETER_CODES['-4.']
 
             self.data['wet drop'] = int(s[19])
             self.data['wet avg'] = int(s[20])
             self.data['wet dry'] = int(s[21])
 
-            self.data['illumination'] = DAYLIGHT_CODES[int(s[33])]
+            self.data['illumination'] = api.DAYLIGHT_CODES[int(s[33])]
 
             # compound results
             self.data['wet'] = wet
@@ -534,7 +405,7 @@ class BoltwoodII:
 
         # find complete messages
         msgs = []
-        while REPORT_SUFFIX in raw_data:
+        while api.REPORT_SUFFIX in raw_data:
             # get message
             pos = raw_data.index(b'\n')
             msg = raw_data[:pos + 1]
@@ -591,17 +462,17 @@ class BoltwoodII:
         # get response type
         tmp = raw_data.split()[0]
         try:
-            response_type = ResponsePrefix(tmp)
+            response_type = api.ResponsePrefix(tmp)
         except ValueError:
             logging.warning('Could not determine response type %s.', tmp)
             return
 
         # what type is it?
-        if response_type == ResponsePrefix.POLLING:
+        if response_type == api.ResponsePrefix.POLLING:
             # acknowledge it
             self._send_ack()
 
-        elif response_type == ResponsePrefix.REPORT:
+        elif response_type == api.ResponsePrefix.REPORT:
             # create report
             report = Report(raw_data)
 
@@ -613,11 +484,11 @@ class BoltwoodII:
         """Send ACK."""
 
         # send ACK + new poll request
-        self._conn.write(ResponsePrefix.ACK.value + b'\n' + REQUEST_POLL)
+        self._conn.write(api.ResponsePrefix.ACK.value + b'\n' + api.REQUEST_POLL)
 
     def _send_poll_request(self):
         """Ask sensor for data."""
-        self._conn.write(REQUEST_POLL)
+        self._conn.write(api.REQUEST_POLL)
 
 
 __all__ = ['BoltwoodII', 'Report']
