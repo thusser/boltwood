@@ -229,6 +229,13 @@ class SensorsReport(Report):
         # init report
         Report.__init__(self, columns=columns, *args, **kwargs)
 
+    @property
+    def rain_status(self):
+        return api.RAIN_CODES[self.data['rainCond']] if 'rainCond' in self.data else 'N/A'
+
+    @property
+    def sky_status(self):
+        return api.SKY_CODES[self.data['skyCond']] if 'skyCond' in self.data else 'N/A'
 
 class AverageSensorsReport(Report):
     """A sensor data report."""

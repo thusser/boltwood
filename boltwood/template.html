@@ -39,6 +39,14 @@
             <td>{{ current.format_string('skyMinusAmbientTemperature') }}</td>
             <td>{{ current.format_string('rainSensor') }}</td>
         </tr>
+        <tr>
+            <td>&nbsp;</td>
+            <td>&nbsp;</td>
+            <td>&nbsp;</td>
+            <td>&nbsp;</td>
+            <td>{{ current.sky_status }}</td>
+            <td>{{ current.rain_status }}</td>
+        </tr>
         {% end %}
     </table>
 
