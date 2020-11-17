@@ -16,7 +16,8 @@ class MainHandler(tornado.web.RequestHandler):
     def get(self):
         app: Application = self.application
         self.render(os.path.join(os.path.dirname(__file__), 'template.html'),
-                    current=app.current, history=app.history)
+                    current=app.current, history=app.history, thresholds=app.thresholds, wetness=app.wetness,
+                    wetness_calib=app.wetness_calib, thermo_calib=app.thermo_calib)
 
 
 class JsonHandler(tornado.web.RequestHandler):
