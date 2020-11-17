@@ -126,7 +126,7 @@ class Application(tornado.web.Application):
                     'relativeHumidityPercentage': float(s[2]),
                     'windSpeed': float(s[3]),
                     'skyMinusAmbientTemperature': float(s[4]),
-                    'rainSensor': bool(s[5]),
+                    'rainSensor': s[5] == 'True',
                 }
                 self.history.append(report)
 
