@@ -229,6 +229,14 @@ class SensorsReport(Report):
         # init report
         Report.__init__(self, columns=columns, *args, **kwargs)
 
+    def _parse_content(self):
+        """Parse report data."""
+        Report._parse_content(self)
+
+        # we want windspeed in km/h and not in mph
+        if 'windSpeed' in self.data:
+            self.data['windSpeed'] /= 1.609344
+
     @property
     def rain_status(self):
         return api.RAIN_CODES[self.data['rainCond']] if 'rainCond' in self.data else 'N/A'
