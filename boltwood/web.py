@@ -46,7 +46,8 @@ class JsonHandler(tornado.web.RequestHandler):
 
         # get data
         data = {'time': record.time.strftime('%Y-%m-%d %H:%M:%S')}
-        for c in ['T_ambient', 'humidity', 'windspeed', 'dT_sky', 'raining']:
+        for c in ['ambientTemperature', 'relativeHumidityPercentage', 'windSpeed',
+                  'skyMinusAmbientTemperature', 'rainSensor']:
             data[c] = record.data[c] if c in record.data else 'N/A'
 
         # send to client
