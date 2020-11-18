@@ -120,7 +120,7 @@ class Application(tornado.web.Application):
 
                 # create report and fill it
                 report = AverageSensorsReport([])
-                report.time = datetime.datetime.strptime(s[0], '%Y-%m-%d %H:%M:%S')
+                report.time = datetime.datetime.strptime(s[0], '%Y-%m-%dT%H:%M:%S')
                 report.data = {
                     'ambientTemperature': float(s[1]),
                     'relativeHumidityPercentage': float(s[2]),
@@ -163,7 +163,7 @@ class Application(tornado.web.Application):
                       '{windSpeed:.2f},' \
                       '{skyMinusAmbientTemperature:.2f},' \
                       '{rainSensor}\n'
-                csv.write(fmt.format(time=average.time.strftime('%Y-%m-%d %H:%M:%S'), **average.data))
+                csv.write(fmt.format(time=average.time.strftime('%Y-%m-%dT%H:%M:%S'), **average.data))
 
         # reset reports
         self.reports = []
