@@ -281,7 +281,7 @@ class AverageSensorsReport(Report):
 
             # calculate mean
             for c in ['skyMinusAmbientTemperature', 'ambientTemperature', 'windSpeed', 'relativeHumidityPercentage']:
-                self.data[c] = None if len(data[c]) == 0 else self.data[c] = np.nanmean(data[c])
+                self.data[c] = None if len(data[c]) == 0 else np.nanmean(data[c])
 
             # rain
             self.data['rainSensor'] = any(data['rainSensor'])
