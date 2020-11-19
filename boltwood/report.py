@@ -198,8 +198,8 @@ class SensorsReport(Report):
             ('skyMinusAmbientTemperature', float),
             ('ambientTemperature', float),
             ('windSpeed', float),
-            ('wetSensor', bool),
-            ('rainSensor', bool),
+            ('wetSensor', str),
+            ('rainSensor', str),
             ('relativeHumidityPercentage', int),
             ('dewPointTemperature', float),
             ('caseTemperature', float),
@@ -241,6 +241,10 @@ class SensorsReport(Report):
         if 'skyMinusAmbientTemperature' in self.data and abs(self.data['skyMinusAmbientTemperature']) >= 998:
             # remove value
             self.data['skyMinusAmbientTemperature'] = None
+
+        # evaluate rain/wet sensors, default to True
+        self.data['rainSensor'] = self.data['rainSensor'] != 'N' if 'rainSensor' in self.data else True
+        self.data['wetSensor'] = self.data['wetSensor'] != 'N' if 'wetSensor' in self.data else True
 
     @property
     def rain_status(self):
