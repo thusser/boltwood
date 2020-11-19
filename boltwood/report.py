@@ -275,13 +275,14 @@ class AverageSensorsReport(Report):
             for r in reports:
                 for c, _ in columns:
                     try:
-                        data[c].append(r.data[c])
+                        if r.data[c] is not None:
+                            data[c].append(r.data[c])
                     except KeyError:
                         pass
 
             # calculate mean
             for c in ['skyMinusAmbientTemperature', 'ambientTemperature', 'windSpeed', 'relativeHumidityPercentage']:
-                self.data[c] = None if len(data[c]) == 0 else np.nanmean(data[c])
+                self.data[c] = None if len(data[c]) == 0 else np.mean(data[c])
 
             # rain
             self.data['rainSensor'] = any(data['rainSensor'])
