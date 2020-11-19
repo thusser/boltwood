@@ -237,6 +237,11 @@ class SensorsReport(Report):
         if 'windSpeed' in self.data:
             self.data['windSpeed'] /= 1.609344
 
+        # absolute values of skyMinusAmbientTemperature >= 998 indicate an error
+        if 'skyMinusAmbientTemperature' in self.data and abs(self.data['skyMinusAmbientTemperature']) > 998:
+            # remove value
+            self.data['skyMinusAmbientTemperature'] = None
+
     @property
     def rain_status(self):
         return api.RAIN_CODES[self.data['rainCond']] if 'rainCond' in self.data else 'N/A'
@@ -276,7 +281,7 @@ class AverageSensorsReport(Report):
 
             # calculate mean
             for c in ['skyMinusAmbientTemperature', 'ambientTemperature', 'windSpeed', 'relativeHumidityPercentage']:
-                self.data[c] = np.mean(data[c])
+                self.data[c] = None if len(data[c]) == 0 else self.data[c] = np.nanmean(data[c])
 
             # rain
             self.data['rainSensor'] = any(data['rainSensor'])
