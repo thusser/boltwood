@@ -238,7 +238,8 @@ class SensorsReport(Report):
             self.data['windSpeed'] /= 1.609344
 
         # absolute values of skyMinusAmbientTemperature >= 998 indicate an error
-        if 'skyMinusAmbientTemperature' in self.data and abs(self.data['skyMinusAmbientTemperature']) >= 998:
+        # just to be on the safe side, we check for >= 500
+        if 'skyMinusAmbientTemperature' in self.data and abs(self.data['skyMinusAmbientTemperature']) >= 500:
             # set value to zero
             self.data['skyMinusAmbientTemperature'] = 0
 
