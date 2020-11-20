@@ -239,8 +239,8 @@ class SensorsReport(Report):
 
         # absolute values of skyMinusAmbientTemperature >= 998 indicate an error
         if 'skyMinusAmbientTemperature' in self.data and abs(self.data['skyMinusAmbientTemperature']) >= 998:
-            # remove value
-            self.data['skyMinusAmbientTemperature'] = None
+            # set value to zero
+            self.data['skyMinusAmbientTemperature'] = 0
 
         # evaluate rain/wet sensors, default to True
         self.data['rainSensor'] = self.data['rainSensor'] != 'N' if 'rainSensor' in self.data else True
