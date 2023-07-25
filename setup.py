@@ -15,5 +15,5 @@ setup(
     },
     package_data={'boltwood': ['*.html', 'static_html/*.css']},
     include_package_data=True,
-    install_requires=['tornado', 'apscheduler', 'pyserial', 'numpy']
+    install_requires=['apscheduler', 'pyserial', 'numpy', 'aiohttp', 'aiohttp_jinja2']
 )

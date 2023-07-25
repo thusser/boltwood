@@ -30,7 +30,7 @@
             <th>Rain</th>
         </tr>
         </thead>
-        {% if current is not None %}
+        {% if current %}
         <tr>
             <td>{{ current.format_string('time') }}</td>
             <td>{{ current.format_string('ambientTemperature') }}</td>
@@ -39,7 +39,7 @@
             <td>{{ current.format_string('skyMinusAmbientTemperature') }}</td>
             <td>{{ current.format_string('rainSensor') }}</td>
         </tr>
-        {% end %}
+        {% endif %}
     </table>
 
     <h3>History</h3>
@@ -63,7 +63,7 @@
             <td>{{ h.format_string('skyMinusAmbientTemperature') }}</td>
             <td>{{ h.format_string('rainSensor') }}</td>
         </tr>
-        {% end %}
+        {% endfor %}
     </table>
 </div>
 </body>

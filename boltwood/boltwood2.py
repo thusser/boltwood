@@ -1,17 +1,28 @@
+import asyncio
 import logging
 import time
 import serial
 import threading
 
-from . import api
-from .report import Report, SensorsReport
+from boltwood.api import *
+from boltwood.report import Report, SensorsReport
 
 
 class BoltwoodII:
     """Class that operates a Boltwood II cloud sensor weather station."""
 
-    def __init__(self, port: str = '/dev/ttyUSB0', baudrate: int = 4800, bytesize: int = 8, parity: str = 'N',
-                 stopbits: int = 1, rtscts: bool = False, timeout: int = 10, *args, **kwargs):
+    def __init__(
+        self,
+        port: str = "/dev/ttyUSB0",
+        baudrate: int = 4800,
+        bytesize: int = 8,
+        parity: str = "N",
+        stopbits: int = 1,
+        rtscts: bool = False,
+        timeout: int = 10,
+        *args,
+        **kwargs,
+    ):
         """
 
         Args:
@@ -45,7 +56,7 @@ class BoltwoodII:
         # callback function
         self._callback = None
 
-    def start_polling(self, callback):
+    async def start_polling(self, callback):
         """Start polling the Boltwood II sensor.
 
         Args:
@@ -60,7 +71,7 @@ class BoltwoodII:
         self._thread = threading.Thread(target=self._poll_thread)
         self._thread.start()
 
-    def stop_polling(self):
+    async def stop_polling(self):
         """Stop polling of Boltwood II sensor."""
 
         # close and wait for thread
@@ -82,13 +93,13 @@ class BoltwoodII:
         serial_errors = 0
         sleep_time = self._thread_sleep
         last_report = None
-        raw_data = b''
+        raw_data = b""
 
         # loop until closing
         while not self._closing.is_set():
             # get serial connection
             if self._conn is None:
-                logging.info('connecting to Boltwood II sensor')
+                logging.info("connecting to Boltwood II sensor")
                 try:
                     # connect
                     self._connect_serial()
@@ -107,8 +118,9 @@ class BoltwoodII:
                             sleep_time = self._thread_sleep
 
                     # do logging
-                    logging.critical('%d failed connections to Boltwood II: %s, sleep %d',
-                                     serial_errors, str(e), sleep_time)
+                    logging.critical(
+                        "%d failed connections to Boltwood II: %s, sleep %d", serial_errors, str(e), sleep_time
+                    )
                     self._closing.wait(sleep_time)
 
             # actually read next line and process it
@@ -132,10 +144,11 @@ class BoltwoodII:
                         self._send_poll_request()
 
         # close connection
-        self._conn.close()
+        if self._conn:
+            self._conn.close()
 
     def _extract_messages(self, raw_data) -> (list, bytearray):
-        """ Extract all complete messages from the raw data from the Boltwood.
+        """Extract all complete messages from the raw data from the Boltwood.
 
         Args:
             raw_data: bytearray from Boltwood (via serial.readline())
@@ -148,24 +161,24 @@ class BoltwoodII:
 
         # nothing?
         if not raw_data:
-            return [], b''
+            return [], b""
 
         # find complete messages
         msgs = []
-        while api.FRAME_END in raw_data:
+        while FRAME_END in raw_data:
             # get message
-            pos = raw_data.index(b'\n')
-            msg = raw_data[:pos + 1]
+            pos = raw_data.index(b"\n")
+            msg = raw_data[: pos + 1]
 
             # sometimes the response starts with '/x00', cut that away
-            if msg.startswith(b'\x00'):
+            if msg.startswith(b"\x00"):
                 msg = msg[1:]
 
             # store it
             msgs.append(msg)
 
             # remove from raw_data
-            raw_data = raw_data[pos + 1:]
+            raw_data = raw_data[pos + 1 :]
 
         # return new raw_data and messages
         return msgs, raw_data
@@ -178,10 +191,15 @@ class BoltwoodII:
             self._conn.close()
 
         # create serial object
-        self._conn = serial.Serial(self._port, self._baudrate,
-                                   bytesize=self._bytesize, parity=self._parity,
-                                   stopbits=self._stopbits, timeout=self._serial_timeout,
-                                   rtscts=self._rtscts)
+        self._conn = serial.Serial(
+            self._port,
+            self._baudrate,
+            bytesize=self._bytesize,
+            parity=self._parity,
+            stopbits=self._stopbits,
+            timeout=self._serial_timeout,
+            rtscts=self._rtscts,
+        )
 
         # open it
         if not self._conn.is_open:
@@ -201,39 +219,39 @@ class BoltwoodII:
         """
 
         # no data?
-        if len(raw_data) == 0 or raw_data == b'\n':
+        if len(raw_data) == 0 or raw_data == b"\n":
             # resend poll request
             self._send_poll_request()
             return
 
         # get frame
         # need to compare ranges, because an index into a bytesarray gives an integer, not a byte!
-        if raw_data[:1] != api.FRAME_START or raw_data[-1:] != api.FRAME_END:
-            logging.warning('Invalid frame found.')
+        if raw_data[:1] != FRAME_START or raw_data[-1:] != FRAME_END:
+            logging.warning("Invalid frame found.")
             return
         frame = raw_data[1:-1]
 
         # get command
         try:
-            command = api.CommandChar(frame[:1])
+            command = CommandChar(frame[:1])
         except ValueError:
-            logging.error('Invalid command character found: %s', frame[:1])
+            logging.error("Invalid command character found: %s", frame[:1])
             return
 
         # what do we do with this?
-        if command == api.CommandChar.POLL:
+        if command == CommandChar.POLL:
             # acknowledge it
             self._send_ack()
 
-        elif command == api.CommandChar.ACK:
+        elif command == CommandChar.ACK:
             # do nothing
             pass
 
-        elif command == api.CommandChar.NACK:
+        elif command == CommandChar.NACK:
             # do nothing
             pass
 
-        elif command == api.CommandChar.MSG:
+        elif command == CommandChar.MSG:
             # parse report
             try:
                 report = Report.parse_report(raw_data)
@@ -249,11 +267,11 @@ class BoltwoodII:
         """Send ACK."""
 
         # send ACK + new poll request
-        self._conn.write(api.FRAME_START + api.CommandChar.ACK.value + api.FRAME_END + api.REQUEST_POLL)
+        self._conn.write(FRAME_START + CommandChar.ACK.value + FRAME_END + REQUEST_POLL)
 
     def _send_poll_request(self):
         """Ask sensor for data."""
-        self._conn.write(api.REQUEST_POLL)
+        self._conn.write(REQUEST_POLL)
 
 
-__all__ = ['BoltwoodII', 'Report']
+__all__ = ["BoltwoodII", "Report"]

@@ -6,7 +6,7 @@ import numpy as np
 from datetime import datetime
 import logging
 
-from . import api
+from boltwood import api
 
 
 class Report:
@@ -34,7 +34,7 @@ class Report:
     def __getattr__(self, item):
         """Return value."""
 
-        if item == 'time':
+        if item == "time":
             return self.time
         else:
             return self.data[item]
@@ -49,13 +49,13 @@ class Report:
             Formatted string.
         """
 
-        if item == 'time':
-            return self.time.strftime('%H:%M:%S')
+        if item == "time":
+            return self.time.strftime("%H:%M:%S")
         elif item in self.data:
             # special treatment for floats
-            return '%.2f' % self.data[item] if isinstance(self.data[item], float) else str(self.data[item])
+            return "%.2f" % self.data[item] if isinstance(self.data[item], float) else str(self.data[item])
         else:
-            return 'N/A'
+            return "N/A"
 
     def _parse_content(self):
         """Parse report data."""
@@ -64,7 +64,7 @@ class Report:
         s = self.content.split()
         req_columns = len(self.data) if self.req_columns is None else self.req_columns
         if len(s) < req_columns:
-            logging.warning('Boltwood II report too small! (%d < %d)', len(s), req_columns)
+            logging.warning("Boltwood II report too small! (%d < %d)", len(s), req_columns)
             return
 
         # loop columns
@@ -72,7 +72,7 @@ class Report:
             # got value?
             if i < len(s):
                 # get value, special treatment for bools
-                self.data[name] = s[i] == 'Y' if typ == bool else typ(s[i])
+                self.data[name] = s[i] == "Y" if typ == bool else typ(s[i])
 
     @staticmethod
     def parse_report(raw_data: bytearray) -> Report:
@@ -80,14 +80,14 @@ class Report:
         try:
             report_type = api.ReportType(raw_data[2:3])
         except ValueError:
-            raise ValueError('Invalid report type found: %s' % raw_data[2:3])
+            raise ValueError("Invalid report type found: %s" % raw_data[2:3])
 
         # decode bytes from Boltwood into a string
         try:
             # seems like last 4 bytes are always rubbish
-            content = raw_data[4:-5].decode('utf-8')
+            content = raw_data[4:-5].decode("utf-8")
         except UnicodeDecodeError as e:
-            raise ValueError('Unicode decode error: %s' % str(e))
+            raise ValueError("Unicode decode error: %s" % str(e))
 
         # get report class
         report_class = {
@@ -95,7 +95,7 @@ class Report:
             api.ReportType.SENSORS: SensorsReport,
             api.ReportType.WETNESS_CALIB: WetnessCalibReport,
             api.ReportType.THRESHOLD: ThresholdReport,
-            api.ReportType.WETNESS: WetnessReport
+            api.ReportType.WETNESS: WetnessReport,
         }[report_type]
 
         # parse report
@@ -104,14 +104,10 @@ class Report:
 
 class ThermopileCalibReport(Report):
     """A thermopile calibration report."""
+
     def __init__(self, *args, **kwargs):
         # define columns
-        columns = [
-            ('eThermopileCal', int),
-            ('eBestK', float),
-            ('eBestD', float),
-            ('eBestOffs', float)
-        ]
+        columns = [("eThermopileCal", int), ("eBestK", float), ("eBestD", float), ("eBestOffs", float)]
 
         # init report
         Report.__init__(self, columns=columns, *args, **kwargs)
@@ -119,19 +115,20 @@ class ThermopileCalibReport(Report):
 
 class WetnessCalibReport(Report):
     """A wetness calibration report."""
+
     def __init__(self, *args, **kwargs):
         # define columns
         columns = [
-            ('eWetCal', int),
-            ('eWetOscFactor', float),
-            ('eRawWetAvg', int),
-            ('eCaseT', float),
-            ('eshtAmbientT', float),
-            ('enomOsc', int),
-            ('oscDry', int),
-            ('minWetAvg', int),
-            ('dif', int),
-            ('unknown1', str)
+            ("eWetCal", int),
+            ("eWetOscFactor", float),
+            ("eRawWetAvg", int),
+            ("eCaseT", float),
+            ("eshtAmbientT", float),
+            ("enomOsc", int),
+            ("oscDry", int),
+            ("minWetAvg", int),
+            ("dif", int),
+            ("unknown1", str),
         ]
 
         # init report
@@ -140,26 +137,27 @@ class WetnessCalibReport(Report):
 
 class ThresholdReport(Report):
     """A threshold report."""
+
     def __init__(self, *args, **kwargs):
         # define columns
         columns = [
-            ('serialNumber', int),
-            ('version', int),
-            ('eSendErrs', int),
-            ('eCloudyThresh', float),
-            ('eVeryCloudyThresh', float),
-            ('eWindyThresh', float),
-            ('eVeryWindyThresh', float),
-            ('eRainThresh', int),
-            ('eWetThresh', int),
-            ('eDaylightCode', int),
-            ('eDayThresh', int),
-            ('eVeryDayThresh', int),
-            ('unknown1', int),
-            ('unknown2', int),
-            ('unknown3', int),
-            ('unknown4', int),
-            ('unknown5', int)
+            ("serialNumber", int),
+            ("version", int),
+            ("eSendErrs", int),
+            ("eCloudyThresh", float),
+            ("eVeryCloudyThresh", float),
+            ("eWindyThresh", float),
+            ("eVeryWindyThresh", float),
+            ("eRainThresh", int),
+            ("eWetThresh", int),
+            ("eDaylightCode", int),
+            ("eDayThresh", int),
+            ("eVeryDayThresh", int),
+            ("unknown1", int),
+            ("unknown2", int),
+            ("unknown3", int),
+            ("unknown4", int),
+            ("unknown5", int),
         ]
 
         # init report
@@ -168,16 +166,17 @@ class ThresholdReport(Report):
 
 class WetnessReport(Report):
     """A threshold report."""
+
     def __init__(self, *args, **kwargs):
         # define columns
         columns = [
-            ('caseVal', float),
-            ('ambT', float),
-            ('wAvgW', int),
-            ('wAvgC', float),
-            ('nomos', float),
-            ('rawWT', int),
-            ('wetAvg', int)
+            ("caseVal", float),
+            ("ambT", float),
+            ("wAvgW", int),
+            ("wAvgC", float),
+            ("nomos", float),
+            ("rawWT", int),
+            ("wetAvg", int),
         ]
 
         # init report
@@ -186,44 +185,45 @@ class WetnessReport(Report):
 
 class SensorsReport(Report):
     """A sensor data report."""
+
     def __init__(self, *args, **kwargs):
         # define columns
         columns = [
-            ('humidstatTempCode', int),
-            ('cloudCond', int),
-            ('windCond', int),
-            ('rainCond', int),
-            ('skyCond', int),
-            ('roofCloseRequested', int),
-            ('skyMinusAmbientTemperature', float),
-            ('ambientTemperature', float),
-            ('windSpeed', float),
-            ('wetSensor', str),
-            ('rainSensor', str),
-            ('relativeHumidityPercentage', int),
-            ('dewPointTemperature', float),
-            ('caseTemperature', float),
-            ('rainHeaterPercentage', int),
-            ('blackBodyTemperature', float),
-            ('rainHeaterState', int),
-            ('powerVoltage', float),
-            ('anemometerTemeratureDiff', float),
-            ('wetnessDrop', int),
-            ('wetnessAvg', int),
-            ('wetnessDry', int),
-            ('rainHeaterPWM', int),
-            ('anemometerHeaterPWM', int),
-            ('thermopileADC', int),
-            ('thermistorADC', int),
-            ('powerADC', int),
-            ('blockADC', int),
-            ('anemometerThermistorADC', int),
-            ('davisVaneADC', int),
-            ('dkMPH', float),
-            ('extAnemometerDirection', int),
-            ('rawWetnessOsc', int),
-            ('dayCond', int),
-            ('daylightADC', int)
+            ("humidstatTempCode", int),
+            ("cloudCond", int),
+            ("windCond", int),
+            ("rainCond", int),
+            ("skyCond", int),
+            ("roofCloseRequested", int),
+            ("skyMinusAmbientTemperature", float),
+            ("ambientTemperature", float),
+            ("windSpeed", float),
+            ("wetSensor", str),
+            ("rainSensor", str),
+            ("relativeHumidityPercentage", int),
+            ("dewPointTemperature", float),
+            ("caseTemperature", float),
+            ("rainHeaterPercentage", int),
+            ("blackBodyTemperature", float),
+            ("rainHeaterState", int),
+            ("powerVoltage", float),
+            ("anemometerTemeratureDiff", float),
+            ("wetnessDrop", int),
+            ("wetnessAvg", int),
+            ("wetnessDry", int),
+            ("rainHeaterPWM", int),
+            ("anemometerHeaterPWM", int),
+            ("thermopileADC", int),
+            ("thermistorADC", int),
+            ("powerADC", int),
+            ("blockADC", int),
+            ("anemometerThermistorADC", int),
+            ("davisVaneADC", int),
+            ("dkMPH", float),
+            ("extAnemometerDirection", int),
+            ("rawWetnessOsc", int),
+            ("dayCond", int),
+            ("daylightADC", int),
         ]
 
         # init report
@@ -234,26 +234,26 @@ class SensorsReport(Report):
         Report._parse_content(self)
 
         # we want windspeed in km/h and not in mph
-        if 'windSpeed' in self.data:
-            self.data['windSpeed'] /= 1.609344
+        if "windSpeed" in self.data:
+            self.data["windSpeed"] /= 1.609344
 
         # absolute values of skyMinusAmbientTemperature >= 998 indicate an error
         # just to be on the safe side, we check for >= 500
-        if 'skyMinusAmbientTemperature' in self.data and abs(self.data['skyMinusAmbientTemperature']) >= 500:
+        if "skyMinusAmbientTemperature" in self.data and abs(self.data["skyMinusAmbientTemperature"]) >= 500:
             # set value to zero
-            self.data['skyMinusAmbientTemperature'] = 0
+            self.data["skyMinusAmbientTemperature"] = 0
 
         # evaluate rain/wet sensors, default to True
-        self.data['rainSensor'] = self.data['rainSensor'] != 'N' if 'rainSensor' in self.data else True
-        self.data['wetSensor'] = self.data['wetSensor'] != 'N' if 'wetSensor' in self.data else True
+        self.data["rainSensor"] = self.data["rainSensor"] != "N" if "rainSensor" in self.data else True
+        self.data["wetSensor"] = self.data["wetSensor"] != "N" if "wetSensor" in self.data else True
 
     @property
     def rain_status(self):
-        return api.RAIN_CODES[self.data['rainCond']] if 'rainCond' in self.data else 'N/A'
+        return api.RAIN_CODES[self.data["rainCond"]] if "rainCond" in self.data else "N/A"
 
     @property
     def sky_status(self):
-        return api.SKY_CODES[self.data['skyCond']] if 'skyCond' in self.data else 'N/A'
+        return api.SKY_CODES[self.data["skyCond"]] if "skyCond" in self.data else "N/A"
 
 
 class AverageSensorsReport(Report):
@@ -262,12 +262,12 @@ class AverageSensorsReport(Report):
     def __init__(self, reports: List[SensorsReport], *args, **kwargs):
         # define columns
         columns = [
-            ('skyMinusAmbientTemperature', float),
-            ('ambientTemperature', float),
-            ('windSpeed', float),
-            ('wetSensor', bool),
-            ('rainSensor', bool),
-            ('relativeHumidityPercentage', int),
+            ("skyMinusAmbientTemperature", float),
+            ("ambientTemperature", float),
+            ("windSpeed", float),
+            ("wetSensor", bool),
+            ("rainSensor", bool),
+            ("relativeHumidityPercentage", int),
         ]
 
         # init report
@@ -286,8 +286,8 @@ class AverageSensorsReport(Report):
                         pass
 
             # calculate mean
-            for c in ['skyMinusAmbientTemperature', 'ambientTemperature', 'windSpeed', 'relativeHumidityPercentage']:
+            for c in ["skyMinusAmbientTemperature", "ambientTemperature", "windSpeed", "relativeHumidityPercentage"]:
                 self.data[c] = None if len(data[c]) == 0 else np.mean(data[c])
 
             # rain
-            self.data['rainSensor'] = any(data['rainSensor'])
+            self.data["rainSensor"] = any(data["rainSensor"])
