@@ -50,7 +50,7 @@ class Influx:
 
     def __call__(self, report: Report):
         """Put a new measurement in the send queue."""
-        if isinstance(report, SensorsReport):
+        if self._client is not None and isinstance(report, SensorsReport):
             self._queue.put(report)
 
     def _send_measurements(self):
