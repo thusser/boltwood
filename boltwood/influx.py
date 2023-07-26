@@ -70,8 +70,7 @@ class Influx:
 
             # get data
             time = report.time.strftime("%Y-%m-%dT%H:%M:%SZ")
-            fields = {val: report.data[key] if key in report.data else None for key, val in FIELDS.items()}
-            fields["rain"] = int(fields["rain"])
+            fields = {val: float(report.data[key]) if key in report.data else None for key, val in FIELDS.items()}
 
             # send it
             write_api.write(bucket=self._bucket, record={"measurement": "boltwood", "fields": fields, "time": time})
