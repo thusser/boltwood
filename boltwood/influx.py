@@ -56,6 +56,10 @@ class Influx:
     def _send_measurements(self):
         """Run until closing to send reports."""
 
+        # no client?
+        if self._client is None:
+            return
+
         # get API
         write_api = self._client.write_api(SYNCHRONOUS)
 
