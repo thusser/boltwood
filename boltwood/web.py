@@ -9,22 +9,35 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 import logging
 
-from boltwood.report import AverageSensorsReport, SensorsReport, ThresholdReport, WetnessReport, WetnessCalibReport, \
-    ThermopileCalibReport
+from boltwood.influx import Influx
+from boltwood.report import (
+    AverageSensorsReport,
+    SensorsReport,
+    ThresholdReport,
+    WetnessReport,
+    WetnessCalibReport,
+    ThermopileCalibReport,
+)
 from .boltwood import BoltwoodII, Report
 
 
 class MainHandler(tornado.web.RequestHandler):
     def get(self):
         app: Application = self.application
-        self.render(os.path.join(os.path.dirname(__file__), 'template.html'),
-                    current=app.current, history=app.history, thresholds=app.thresholds, wetness=app.wetness,
-                    wetness_calib=app.wetness_calib, thermo_calib=app.thermo_calib)
+        self.render(
+            os.path.join(os.path.dirname(__file__), "template.html"),
+            current=app.current,
+            history=app.history,
+            thresholds=app.thresholds,
+            wetness=app.wetness,
+            wetness_calib=app.wetness_calib,
+            thermo_calib=app.thermo_calib,
+        )
 
 
 class JsonHandler(tornado.web.RequestHandler):
     def set_default_headers(self):
-        self.set_header('Content-Type', 'application/json')
+        self.set_header("Content-Type", "application/json")
 
     def get(self, which):
         """JSON output of data.
@@ -37,18 +50,23 @@ class JsonHandler(tornado.web.RequestHandler):
         """
 
         # get record
-        if which == 'current':
+        if which == "current":
             record = self.application.current
-        elif which == 'average':
+        elif which == "average":
             record = self.application.average
         else:
             raise tornado.web.HTTPError(404)
 
         # get data
-        data = {'time': record.time.strftime('%Y-%m-%d %H:%M:%S')}
-        for c in ['ambientTemperature', 'relativeHumidityPercentage', 'windSpeed',
-                  'skyMinusAmbientTemperature', 'rainSensor']:
-            data[c] = record.data[c] if c in record.data else 'N/A'
+        data = {"time": record.time.strftime("%Y-%m-%d %H:%M:%S")}
+        for c in [
+            "ambientTemperature",
+            "relativeHumidityPercentage",
+            "windSpeed",
+            "skyMinusAmbientTemperature",
+            "rainSensor",
+        ]:
+            data[c] = record.data[c] if c in record.data else "N/A"
 
         # send to client
         self.write(json.dumps(data))
@@ -57,14 +75,17 @@ class JsonHandler(tornado.web.RequestHandler):
 class Application(tornado.web.Application):
     def __init__(self, log_file: str = None, *args, **kwargs):
         # static path
-        static_path = os.path.join(os.path.dirname(__file__), 'static_html/')
+        static_path = os.path.join(os.path.dirname(__file__), "static_html/")
 
         # init tornado
-        tornado.web.Application.__init__(self, [
-            (r'/', MainHandler),
-            (r'/(.*).json', JsonHandler),
-            (r'/static/(.*)', tornado.web.StaticFileHandler, {'path': static_path})
-        ])
+        tornado.web.Application.__init__(
+            self,
+            [
+                (r"/", MainHandler),
+                (r"/(.*).json", JsonHandler),
+                (r"/static/(.*)", tornado.web.StaticFileHandler, {"path": static_path}),
+            ],
+        )
 
         # init other stuff
         self.current = None
@@ -105,29 +126,29 @@ class Application(tornado.web.Application):
             return
 
         # open file
-        with open(self.log_file, 'r') as csv:
+        with open(self.log_file, "r") as csv:
             # check header
-            if csv.readline() != 'time,T_ambient,humidity,windspeed,dT_sky,raining\n':
-                logging.error('Invalid log file format.')
+            if csv.readline() != "time,T_ambient,humidity,windspeed,dT_sky,raining\n":
+                logging.error("Invalid log file format.")
                 return
 
             # read lines
             for line in csv:
                 # split and check
-                s = line.split(',')
+                s = line.split(",")
                 if len(s) != 6:
-                    logging.error('Invalid log file format.')
+                    logging.error("Invalid log file format.")
                     continue
 
                 # create report and fill it
                 report = AverageSensorsReport([])
-                report.time = datetime.datetime.strptime(s[0], '%Y-%m-%dT%H:%M:%S')
+                report.time = datetime.datetime.strptime(s[0], "%Y-%m-%dT%H:%M:%S")
                 report.data = {
-                    'ambientTemperature': float(s[1]),
-                    'relativeHumidityPercentage': float(s[2]),
-                    'windSpeed': float(s[3]),
-                    'skyMinusAmbientTemperature': float(s[4]),
-                    'rainSensor': s[5] == 'True',
+                    "ambientTemperature": float(s[1]),
+                    "relativeHumidityPercentage": float(s[2]),
+                    "windSpeed": float(s[3]),
+                    "skyMinusAmbientTemperature": float(s[4]),
+                    "rainSensor": s[5] == "True",
                 }
                 self.history.append(report)
 
@@ -153,18 +174,20 @@ class Application(tornado.web.Application):
             # does it exist?
             if not os.path.exists(self.log_file):
                 # write header
-                with open(self.log_file, 'w') as csv:
-                    csv.write('time,T_ambient,humidity,windspeed,dT_sky,raining\n')
+                with open(self.log_file, "w") as csv:
+                    csv.write("time,T_ambient,humidity,windspeed,dT_sky,raining\n")
 
             # write line
-            with open(self.log_file, 'a') as csv:
-                fmt = '{time},' \
-                      '{ambientTemperature:.2f},' \
-                      '{relativeHumidityPercentage:.2f},' \
-                      '{windSpeed:.2f},' \
-                      '{skyMinusAmbientTemperature:.2f},' \
-                      '{rainSensor}\n'
-                csv.write(fmt.format(time=average.time.strftime('%Y-%m-%dT%H:%M:%S'), **average.data))
+            with open(self.log_file, "a") as csv:
+                fmt = (
+                    "{time},"
+                    "{ambientTemperature:.2f},"
+                    "{relativeHumidityPercentage:.2f},"
+                    "{windSpeed:.2f},"
+                    "{skyMinusAmbientTemperature:.2f},"
+                    "{rainSensor}\n"
+                )
+                csv.write(fmt.format(time=average.time.strftime("%Y-%m-%dT%H:%M:%S"), **average.data))
 
         # reset reports
         self.reports = []
@@ -172,15 +195,16 @@ class Application(tornado.web.Application):
 
 def main():
     # parser
-    parser = argparse.ArgumentParser('Boltwood II cloud sensor web interface')
-    parser.add_argument('--http-port', type=int, help='HTTP port for web interface', default=8888)
-    parser.add_argument('--port', type=str, help='Serial port to BWII', default='/dev/ttyUSB0')
-    parser.add_argument('--baudrate', type=int, help='Baud rate', default=4800)
-    parser.add_argument('--bytesize', type=int, help='Byte size', default=8)
-    parser.add_argument('--parity', type=str, help='Parity bit', default='N')
-    parser.add_argument('--stopbits', type=int, help='Number of stop bits', default=1)
-    parser.add_argument('--rtscts', type=bool, help='Use RTSCTS?', default=False)
-    parser.add_argument('--log-file', type=str, help='Log file for average values')
+    parser = argparse.ArgumentParser("Boltwood II cloud sensor web interface")
+    parser.add_argument("--http-port", type=int, help="HTTP port for web interface", default=8888)
+    parser.add_argument("--port", type=str, help="Serial port to BWII", default="/dev/ttyUSB0")
+    parser.add_argument("--baudrate", type=int, help="Baud rate", default=4800)
+    parser.add_argument("--bytesize", type=int, help="Byte size", default=8)
+    parser.add_argument("--parity", type=str, help="Parity bit", default="N")
+    parser.add_argument("--stopbits", type=int, help="Number of stop bits", default=1)
+    parser.add_argument("--rtscts", type=bool, help="Use RTSCTS?", default=False)
+    parser.add_argument("--log-file", type=str, help="Log file for average values")
+    parser.add_argument("--influx", type=str, help="Four strings containing URL, token, org, and bucket", nargs=4)
     args = parser.parse_args()
 
     # create Boltwood II sensor object
@@ -189,8 +213,18 @@ def main():
     # init app
     application = Application(**vars(args))
 
+    # influx
+    influx = Influx(args.influx)
+    influx.start()
+
+    # callback method
+    def callback(report: Report):
+        # forward to application and influx
+        application.bw2_callback(report)
+        influx(report)
+
     # start polling
-    bw2.start_polling(application.bw2_callback)
+    bw2.start_polling(callback)
 
     # init tornado web server
     http_server = tornado.httpserver.HTTPServer(application)
@@ -198,7 +232,7 @@ def main():
 
     # scheduler
     sched = BackgroundScheduler()
-    trigger = CronTrigger(minute='*/5')
+    trigger = CronTrigger(minute="*/5")
     sched.add_job(application.sched_callback, trigger)
     sched.start()
 
@@ -209,9 +243,10 @@ def main():
         pass
 
     # stop polling
+    influx.stop()
     bw2.stop_polling()
     sched.shutdown()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
