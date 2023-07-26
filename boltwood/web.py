@@ -214,7 +214,7 @@ def main():
     application = Application(**vars(args))
 
     # influx
-    influx = Influx(args.influx)
+    influx = Influx(*args.influx)
     influx.start()
 
     # callback method
