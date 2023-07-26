@@ -129,15 +129,15 @@ class Application(tornado.web.Application):
         with open(self.log_file, "r") as csv:
             # check header
             if csv.readline() != "time,T_ambient,humidity,windspeed,dT_sky,raining\n":
-                logging.error("Invalid log file format.")
+                logging.error("Invalid log file header.")
                 return
 
             # read lines
-            for line in csv:
+            for no, line in enumerate(csv):
                 # split and check
                 s = line.split(",")
                 if len(s) != 6:
-                    logging.error("Invalid log file format.")
+                    logging.error(f"Invalid log file format in line {no}: {line}")
                     continue
 
                 # create report and fill it
