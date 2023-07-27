@@ -2,6 +2,7 @@ import queue
 import threading
 from typing import Optional
 
+import urllib3
 from influxdb_client import InfluxDBClient, Point
 from influxdb_client.client.write_api import SYNCHRONOUS
 
@@ -73,4 +74,9 @@ class Influx:
             fields = {val: float(report.data[key]) if key in report.data else None for key, val in FIELDS.items()}
 
             # send it
-            write_api.write(bucket=self._bucket, record={"measurement": "boltwood", "fields": fields, "time": time})
+            try:
+                write_api.write(bucket=self._bucket, record={"measurement": "boltwood", "fields": fields, "time": time})
+            except urllib3.exceptions.NewConnectionError:
+                # put message back and wait a little
+                self._queue.put(report)
+                time.sleep(10)
