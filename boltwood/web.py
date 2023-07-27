@@ -57,15 +57,24 @@ class JsonHandler(tornado.web.RequestHandler):
         else:
             raise tornado.web.HTTPError(404)
 
-        # get data
-        data = {"time": record.time.strftime("%Y-%m-%d %H:%M:%S")}
-        for c in [
+        # fields
+        FIELDS = [
             "ambientTemperature",
             "relativeHumidityPercentage",
             "windSpeed",
             "skyMinusAmbientTemperature",
             "rainSensor",
-        ]:
+        ]
+
+        # none?
+        if record is None:
+            tmp = {f: "N/A" for f in FIELDS}
+            tmp["time"] = "N/A"
+            return tmp
+
+        # get data
+        data = {"time": record.time.strftime("%Y-%m-%d %H:%M:%S")}
+        for c in FIELDS:
             data[c] = record.data[c] if c in record.data else "N/A"
 
         # send to client
