@@ -1,5 +1,6 @@
 import queue
 import threading
+import time
 from typing import Optional
 
 import urllib3
@@ -70,12 +71,14 @@ class Influx:
             report = self._queue.get()
 
             # get data
-            time = report.time.strftime("%Y-%m-%dT%H:%M:%SZ")
+            report_time = report.time.strftime("%Y-%m-%dT%H:%M:%SZ")
             fields = {val: float(report.data[key]) if key in report.data else None for key, val in FIELDS.items()}
 
             # send it
             try:
-                write_api.write(bucket=self._bucket, record={"measurement": "boltwood", "fields": fields, "time": time})
+                write_api.write(
+                    bucket=self._bucket, record={"measurement": "boltwood", "fields": fields, "time": report_time}
+                )
             except urllib3.exceptions.NewConnectionError:
                 # put message back and wait a little
                 self._queue.put(report)
