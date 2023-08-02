@@ -205,7 +205,7 @@ class Application(tornado.web.Application):
 def main():
     # parser
     parser = argparse.ArgumentParser("Boltwood II cloud sensor web interface")
-    parser.add_argument("--http-port", type=int, help="HTTP port for web interface", default=8888)
+    parser.add_argument("--http-port", type=int, help="HTTP port for web interface", default=8120)
     parser.add_argument("--port", type=str, help="Serial port to BWII", default="/dev/ttyUSB0")
     parser.add_argument("--baudrate", type=int, help="Baud rate", default=4800)
     parser.add_argument("--bytesize", type=int, help="Byte size", default=8)
@@ -237,7 +237,7 @@ def main():
 
     # init tornado web server
     http_server = tornado.httpserver.HTTPServer(application)
-    http_server.listen(8888)
+    http_server.listen(args.http_port)
 
     # scheduler
     sched = BackgroundScheduler()
