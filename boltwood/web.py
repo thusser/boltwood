@@ -180,26 +180,32 @@ class Application(tornado.web.Application):
 
         # write to log file?
         if self.log_file is not None:
-            # does it exist?
-            if not os.path.exists(self.log_file):
-                # write header
-                with open(self.log_file, "w") as csv:
-                    csv.write("time,T_ambient,humidity,windspeed,dT_sky,raining\n")
-
-            # write line
-            with open(self.log_file, "a") as csv:
-                fmt = (
-                    "{time},"
-                    "{ambientTemperature:.2f},"
-                    "{relativeHumidityPercentage:.2f},"
-                    "{windSpeed:.2f},"
-                    "{skyMinusAmbientTemperature:.2f},"
-                    "{rainSensor}\n"
-                )
-                csv.write(fmt.format(time=average.time.strftime("%Y-%m-%dT%H:%M:%S"), **average.data))
+            try:
+                self.write_log(average)
+            except:
+                pass
 
         # reset reports
         self.reports = []
+
+    def write_log(self, average: Report):
+        # does it exist?
+        if not os.path.exists(self.log_file):
+            # write header
+            with open(self.log_file, "w") as csv:
+                csv.write("time,T_ambient,humidity,windspeed,dT_sky,raining\n")
+
+        # write line
+        with open(self.log_file, "a") as csv:
+            fmt = (
+                "{time},"
+                "{ambientTemperature:.2f},"
+                "{relativeHumidityPercentage:.2f},"
+                "{windSpeed:.2f},"
+                "{skyMinusAmbientTemperature:.2f},"
+                "{rainSensor}\n"
+            )
+            csv.write(fmt.format(time=average.time.strftime("%Y-%m-%dT%H:%M:%S"), **average.data))
 
 
 def main():
