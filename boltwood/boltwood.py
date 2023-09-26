@@ -145,7 +145,7 @@ class BoltwoodII:
             self._raw_data += self._conn.read()
 
             # extract messages
-            msgs, self._raw_data = self._extract_messages(self._raw_data)
+            msgs = self._extract_messages()
 
             # analyse it
             for msg in msgs:
@@ -159,14 +159,11 @@ class BoltwoodII:
                 if time.time() - self._last_report > 10:
                     self._send_poll_request()
 
-    def _extract_messages(self, raw_data) -> (list, bytearray):
+    def _extract_messages(self) -> list:
         """Extract all complete messages from the raw data from the Boltwood.
 
-        Args:
-            self._raw_data: bytearray from Boltwood (via serial.readline())
-
         Returns:
-            List of messages and remaining raw data.
+            List of messages.
 
         Normally, there should just be a single message per readline, but....
         """
@@ -193,7 +190,7 @@ class BoltwoodII:
             self._raw_data = self._raw_data[pos + 1 :]
 
         # return new self._raw_data and messages
-        return msgs, self._raw_data
+        return msgs
 
     def _connect_serial(self):
         """Open/reset serial connection to sensor."""
@@ -220,28 +217,26 @@ class BoltwoodII:
         # ask for data
         self._send_poll_request()
 
-    def _analyse_message(self, raw_data):
+    def _analyse_message(self, msg):
         """Analyse raw message.
 
         Args:
-            self._raw_data: Raw data.
-
-        Returns:
+            msg: Raw message.
 
         """
 
         # no data?
-        if len(self._raw_data) == 0 or self._raw_data == b"\n":
+        if len(msg) == 0 or msg == b"\n":
             # resend poll request
             self._send_poll_request()
             return
 
         # get frame
         # need to compare ranges, because an index into a bytesarray gives an integer, not a byte!
-        if self._raw_data[:1] != api.FRAME_START or self._raw_data[-1:] != api.FRAME_END:
+        if msg[:1] != api.FRAME_START or msg[-1:] != api.FRAME_END:
             logging.warning("Invalid frame found.")
             return
-        frame = self._raw_data[1:-1]
+        frame = msg[1:-1]
 
         # get command
         try:
@@ -266,7 +261,7 @@ class BoltwoodII:
         elif command == api.CommandChar.MSG:
             # parse report
             try:
-                report = Report.parse_report(self._raw_data)
+                report = Report.parse_report(msg)
             except ValueError as e:
                 logging.error(str(e))
                 return
